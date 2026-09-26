@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Игровой портал</title>
+<style>
+  :root{
+    --bg:#0f1117; --card:#1a1d27; --text:#eef1f8; --muted:#8b93a7;
+    --accent:#6c5ce7; --accent2:#00d2ff; --line:#2a2e3d;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg);color:var(--text)}
+
+  header{display:flex;align-items:center;gap:20px;padding:16px 24px;
+    background:#151822;border-bottom:1px solid var(--line);
+    position:sticky;top:0;z-index:10;flex-wrap:wrap}
+  .logo{font-weight:700;font-size:20px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .search{flex:1;min-width:200px;max-width:400px;padding:10px 16px;
+    border-radius:12px;border:1px solid var(--line);background:#0f1117;
+    color:var(--text);outline:none}
+  .search:focus{border-color:var(--accent)}
+  nav{display:flex;gap:16px;margin-left:auto}
+  nav a{color:var(--muted);text-decoration:none;font-size:14px}
+  nav a:hover{color:var(--text)}
+
+  main{max-width:1200px;margin:0 auto;padding:24px}
+  .hero{background:linear-gradient(135deg,#1e2230,#151822);border-radius:20px;
+    padding:30px;margin-bottom:30px;border:1px solid var(--line)}
+  .hero h1{margin:0 0 10px;font-size:28px}
+  .hero p{margin:0;color:var(--muted)}
+
+  .categories{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px}
+  .cat-btn{padding:8px 18px;border-radius:20px;border:1px solid var(--line);
+    background:transparent;color:var(--muted);cursor:pointer;font-size:14px;transition:.2s}
+  .cat-btn:hover,.cat-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+  .games-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:20px}
+  .game-card{background:var(--card);border-radius:16px;overflow:hidden;
+    border:1px solid var(--line);cursor:pointer;
+    transition:transform .2s,box-shadow .2s,border-color .2s}
+  .game-card:hover{transform:translateY(-4px);box-shadow:0 10px 25px rgba(0,0,0,.4);
+    border-color:var(--accent)}
+  .game-thumb{height:140px;display:flex;align-items:center;justify-content:center;font-size:52px}
+  .game-info{padding:14px}
+  .game-title{font-weight:600;margin-bottom:4px;font-size:15px}
+  .game-cat{font-size:12px;color:var(--muted)}
+
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;
+    align-items:center;justify-content:center;z-index:100;padding:20px}
+  .modal.open{display:flex}
+  .modal-content{background:var(--card);border-radius:20px;width:100%;
+    max-width:560px;padding:24px;position:relative;border:1px solid var(--line);
+    max-height:90vh;overflow-y:auto}
+  .modal-close{position:absolute;top:12px;right:16px;background:none;border:none;
+    color:var(--muted);font-size:28px;cursor:pointer;line-height:1}
+  .modal-close:hover{color:var(--text)}
+  #modalTitle{margin:0 0 4px}
+  #modalCategory{color:var(--muted);margin:0 0 16px;font-size:14px}
+  #gameContainer{text-align:center}
+
+  .game-btn{padding:14px 32px;font-size:18px;border-radius:14px;border:none;
+    cursor:pointer;font-weight:600;background:var(--accent);color:#fff;
+    transition:.15s;margin:6px;min-width:140px}
+  .game-btn:hover:not(:disabled){filter:brightness(1.15)}
+  .game-btn:disabled{opacity:.5;cursor:default}
+  .game-result{margin:12px 0;font-size:16px;color:var(--muted);min-height:24px}
+
+  .game-input{padding:12px 16px;border-radius:12px;border:1px solid var(--line);
+    background:#0f1117;color:var(--text);font-size:16px;width:160px;
+    text-align:center;outline:none;margin:6px}
+  .game-input:focus{border-color:var(--accent)}
+
+  /* Память */
+  .memory-board{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;
+    max-width:380px;margin:16px auto 0}
+  .memory-card{aspect-ratio:1;border-radius:12px;border:1px solid var(--line);
+    background:#0f1117;font-size:28px;cursor:pointer;transition:.2s;color:var(--text)}
+  .memory-card:hover{transform:scale(1.05)}
+  .memory-card.flipped{background:#232838}
+  .memory-card.matched{background:#1e3a2b;border-color:#1e9e5a;opacity:.7;cursor:default}
+
+  /* Саймон */
+  .simon-pad{display:grid;grid-template-columns:1fr 1fr;gap:12px;
+    max-width:300px;margin:16px auto}
+  .simon-btn{aspect-ratio:1;border-radius:16px;border:3px solid #0f1117;
+    cursor:pointer;transition:.1s;opacity:.55}
+  .simon-btn:hover{opacity:.8}
+  .simon-btn.active{opacity:1;transform:scale(.95);box-shadow:0 0 20px currentColor}
+
+  /* Крестики-нолики */
+  .ttt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
+    max-width:280px;margin:16px auto}
+  .ttt-cell{aspect-ratio:1;background:#0f1117;border:1px solid var(--line);
+    border-radius:10px;font-size:40px;font-weight:700;cursor:pointer;
+    color:var(--text);transition:.15s}
+  .ttt-cell:hover{background:#232838}
+
+  /* КНБ */
+  .rps-row{display:flex;justify-content:center;gap:10px;margin:16px 0}
+  .rps-row .game-btn{min-width:80px;padding:14px}
+
+  /* Виселица */
+  .hangman-word{font-size:26px;letter-spacing:6px;font-weight:700;
+    margin:16px 0;color:var(--accent2)}
+  .hangman-kb{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px}
+  .hangman-key{width:38px;height:38px;border-radius:8px;border:1px solid var(--line);
+    background:#0f1117;color:var(--text);cursor:pointer;font-size:14px;
+    font-weight:600;transition:.15s}
+  .hangman-key:hover:not(:disabled){background:var(--accent);border-color:var(--accent)}
+  .hangman-key:disabled{opacity:.3;cursor:default}
+
+  footer{text-align:center;padding:30px 20px;color:var(--muted);
+    font-size:13px;border-top:1px solid var(--line);margin-top:40px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">GamePortal</div>
+  <input class="search" id="search" type="text" placeholder="Поиск игр...">
+  <nav>
+    <a href="#">Игры</a>
+    <a href="#">Категории</a>
+    <a href="#">Мои игры</a>
+  </nav>
+</header>
+
+<main>
+  <section class="hero">
+    <h1>Игровой портал</h1>
+    <p>8 мини-игр разных жанров. Нажми на карточку, чтобы играть.</p>
+  </section>
+  <div class="categories" id="categories"></div>
+  <div class="games-grid" id="gamesGrid"></div>
+</main>
+
+<footer>Учебный макет. Не является копией Яндекс Игр.This is a translation template for a disclaimer stating that your project is an educational prototype and not a copy of Yandex Games. </footer>
+
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <button class="modal-close" id="modalClose">&times;</button>
+    <h2 id="modalTitle"></h2>
+    <p id="modalCategory"></p>
+    <div id="gameContainer"></div>
+  </div>
+</div>
+
+<script>
+/* ============ ИГРА 1: РЕАКЦИЯ ============ */
+function startReaction(el){
+  let phase='idle', timeoutId=null, startTime=0, best=null;
+  const btn=document.createElement('button');
+  btn.className='game-btn';
+  const res=document.createElement('div');
+  res.className='game-result';
+  el.append(btn,res);
+  const reset=()=>{
+    clearTimeout(timeoutId);
+    phase='waiting';
+    btn.textContent='Жди...';
+    btn.style.background='#d93a3a';
+    res.textContent='';
+    timeoutId=setTimeout(()=>{
+      phase='ready';
+      btn.textContent='ЖМИ!';
+      btn.style.background='#1e9e5a';
+      startTime=Date.now();
+    },1500+Math.random()*2500);
+  };
+  btn.onclick=()=>{
+    if(phase==='waiting'){clearTimeout(timeoutId);phase='idle';
+      btn.textContent='Рано!';btn.style.background='#d93a3a';
+      res.textContent='Дождись зелёного цвета.';return;}
+    if(phase==='ready'){
+      const t=Date.now()-startTime;phase='done';
+      btn.textContent='Ещё раз';btn.style.background='#6c5ce7';
+      if(best===null||t<best){best=t;res.textContent=`⚡ ${t} мс — новый рекорд!`;}
+      else res.textContent=`${t} мс. Рекорд: ${best} мс.`;
+      return;
+    }
+    reset();
+  };
+  reset();
+}
+
+/* ============ ИГРА 2: ПАМЯТЬ ============ */
+function startMemory(el){
+  const emojis=['🍎','🍌','🍇','🍒','🍓','🥝','🍍','🥥'];
+  const deck=[...emojis,...emojis].sort(()=>Math.random()-0.5);
+  let first=null,lock=false,matched=0,moves=0;
+  const info=document.createElement('div');info.className='game-result';
+  const board=document.createElement('div');board.className='memory-board';
+  el.append(info,board);
+  const update=()=>{info.textContent=`Ходы: ${moves} | Найдено: ${matched}/8`;};
+  deck.forEach(e=>{
+    const c=document.createElement('button');
+    c.className='memory-card';c.dataset.emoji=e;c.textContent='?';
+    c.onclick=()=>{
+      if(lock||c.classList.contains('flipped')||c.classList.contains('matched'))return;
+      c.textContent=c.dataset.emoji;c.classList.add('flipped');
+      if(!first){first=c;return;}
+      moves++;update();
+      if(first.dataset.emoji===c.dataset.emoji){
+        first.classList.add('matched');c.classList.add('matched');
+        first=null;matched++;update();
+        if(matched===8)info.textContent=`🎉 Победа! Ходов: ${moves}`;
+      }else{
+        lock=true;const a=first,b=c;first=null;
+        setTimeout(()=>{
+          a.textContent='?';a.classList.remove('flipped');
+          b.textContent='?';b.classList.remove('flipped');
+          lock=false;
+        },700);
+      }
+    };
+    board.appendChild(c);
+  });
+  update();
+}
+
+/* ============ ИГРА 3: УГАДАЙ ЧИСЛО ============ */
+function startGuess(el){
+  const secret=Math.floor(Math.random()*100)+1;
+  let tries=0,over=false;
+  const info=document.createElement('div');info.className='game-result';
+  info.textContent='Я загадал число от 1 до 100';
+  const input=document.createElement('input');
+  input.type='number';input.className='game-input';input.placeholder='Число';
+  const btn=document.createElement('button');
+  btn.className='game-btn';btn.textContent='Проверить';
+  const res=document.createElement('div');res.className='game-result';
+  el.append(info,input,btn,res);
+  const guess=()=>{
+    if(over)return;
+    const v=parseInt(input.value,10);
+    if(!v||v<1||v>100){res.textContent='Введи число от 1 до 100';return;}
+    tries++;
+    if(v===secret){res.textContent=`🎉 Угадал за ${tries} попыток!`;
+      btn.disabled=true;input.disabled=true;over=true;}
+    else if(v<secret)res.textContent=`📈 Больше! Попыток: ${tries}`;
+    else res.textContent=`📉 Меньше! Попыток: ${tries}`;
+    input.value='';input.focus();
+  };
+  btn.onclick=guess;
+  input.onkeydown=e=>{if(e.key==='Enter')guess();};
+}
+
+/* ============ ИГРА 4: КЛИКЕР ============ */
+function startClicker(el){
+  let count=0,timer=null;
+  const info=document.createElement('div');info.className='game-result';
+  info.textContent='Успей кликнуть как можно больше за 10 секунд';
+  const startBtn=document.createElement('button');
+  startBtn.className='game-btn';startBtn.textContent='Старт';
+  const area=document.createElement('button');
+  area.className='game-btn';area.style.display='none';
+  area.style.background='#1e9e5a';
+  el.append(info,startBtn,area);
+  startBtn.onclick=()=>{
+    count=0;let t=10;
+    startBtn.style.display='none';area.style.display='inline-block';
+    area.textContent='КЛИК: 0';
+    info.textContent=`Осталось: ${t} сек`;
+    area.onclick=()=>{count++;area.textContent='КЛИК: '+count;};
+    timer=setInterval(()=>{
+      t--;info.textContent=`Осталось: ${t} сек`;
+      if(t<=0){
+        clearInterval(timer);
+        area.style.display='none';startBtn.style.display='inline-block';
+        startBtn.textContent='Ещё раз';area.onclick=null;
+        info.textContent=`⏱ Время вышло! Результат: ${count}`;
+      }
+    },1000);
+  };
+}
+
+/* ============ ИГРА 5: САЙМОН ============ */
+function startSimon(el){
+  const colors=['#e74c3c','#3498db','#2ecc71','#f1c40f'];
+  let sequence=[],userIdx=0,playing=false,level=0;
+  const info=document.createElement('div');info.className='game-result';
+  info.textContent='Повтори последовательность';
+  const pad=document.createElement('div');pad.className='simon-pad';
+  const startBtn=document.createElement('button');
+  startBtn.className='game-btn';startBtn.textContent='Начать';
+  el.append(info,pad,startBtn);
+  const buttons=colors.map((c,i)=>{
+    const b=document.createElement('button');
+    b.className='simon-btn';b.style.background=c;
+    b.onclick=()=>userClick(i);
+    pad.appendChild(b);return b;
+  });
+  const flash=(i,dur=400)=>{
+    buttons[i].classList.add('active');
+    setTimeout(()=>buttons[i].classList.remove('active'),dur);
+  };
+  const playSeq=async()=>{
+    playing=false;info.textContent='Смотри внимательно...';
+    await new Promise(r=>setTimeout(r,600));
+    for(const i of sequence){
+      flash(i);
+      await new Promise(r=>setTimeout(r,550));
+    }
+    playing=true;userIdx=0;
+    info.textContent=`Уровень ${level}. Твой ход!`;
+  };
+  const next=()=>{
+    level++;
+    sequence.push(Math.floor(Math.random()*4));
+    playSeq();
+  };
+  const userClick=(i)=>{
+    if(!playing)return;
+    flash(i,200);
+    if(sequence[userIdx]!==i){
+      playing=false;
+      info.textContent=`❌ Ошибка! Уровень ${level}. Нажми «Заново»`;
+      return;
+    }
+    userIdx++;
+    if(userIdx===sequence.length){
+      if(level>=8){info.textContent='🏆 Победа! Ты прошёл 8 уровней!';playing=false;return;}
+      playing=false;
+      setTimeout(next,700);
+    }
+  };
+  startBtn.onclick=()=>{
+    sequence=[];level=0;userIdx=0;
+    buttons.forEach(b=>b.disabled=false);
+    startBtn.style.display='none';
+    next();
+  };
+}
+
+/* ============ ИГРА 6: КРЕСТИКИ-НОЛИКИ ============ */
+function startTicTacToe(el){
+  const board=Array(9).fill('');
+  let over=false;
+  const info=document.createElement('div');info.className='game-result';
+  info.textContent='Твой ход (X)';
+  const grid=document.createElement('div');grid.className='ttt-grid';
+  el.append(info,grid);
+  const cells=board.map((_,i)=>{
+    const c=document.createElement('button');
+    c.className='ttt-cell';
+    c.onclick=()=>move(i);
+    grid.appendChild(c);return c;
+  });
+  const wins=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  const checkWin=p=>{
+    for(const [a,b,c] of wins) if(board[a]===p&&board[b]===p&&board[c]===p)return true;
+    return false;
+  };
+  const render=()=>cells.forEach((c,i)=>c.textContent=board[i]);
+  const finish=msg=>{over=true;info.textContent=msg;};
+  const aiMove=()=>{
+    // Победить
+    for(const [a,b,c] of wins){
+      const line=[a,b,c],vals=line.map(i=>board[i]);
+      if(vals.filter(v=>v==='O').length===2&&vals.includes('')){
+        board[line[vals.indexOf('')]]='O';return;
+      }
+    }
+    // Заблокировать
+    for(const [a,b,c] of wins){
+      const line=[a,b,c],vals=line.map(i=>board[i]);
+      if(vals.filter(v=>v==='X').length===2&&vals.includes('')){
+        board[line[vals.indexOf('')]]='O';return;
+      }
+    }
+    if(board[4]===''){board[4]='O';return;}
+    const empty=board.map((v,i)=>v===''?i:-1).filter(i=>i>=0);
+    if(empty.length)board[empty[Math.floor(Math.random()*empty.length)]]='O';
+  };
+  const move=i=>{
+    if(over||board[i]!=='')return;
+    board[i]='X';render();
+    if(checkWin('X')){finish('🎉 Ты победил!');return;}
+    if(!board.includes('')){finish('Ничья');return;}
+    aiMove();render();
+    if(checkWin('O')){finish('🤖 Победил компьютер');return;}
+    if(!board.includes('')){finish('Ничья');return;}
+    info.textContent='Твой ход (X)';
+  };
+  render();
+}
+
+/* ============ ИГРА 7: КАМЕНЬ-НОЖНИЦЫ-БУМАГА ============ */
+function startRPS(el){
+  let wins=0,losses=0,draws=0;
+  const score=document.createElement('div');score.className='game-result';
+  const result=document.createElement('div');result.className='game-result';
+  const row=document.createElement('div');row.className='rps-row';
+  el.append(score,row,result);
+  const choices=[['✊','Камень'],['✋','Бумага'],['✌️','Ножницы']];
+  const update=()=>score.textContent=`Победы: ${wins} | Поражения: ${losses} | Ничьи: ${draws}`;
+  choices.forEach(([emoji],i)=>{
+    const b=document.createElement('button');
+    b.className='game-btn';b.style.fontSize='32px';b.textContent=emoji;
+    b.onclick=()=>{
+      const comp=Math.floor(Math.random()*3);
+      let msg=`${choices[i][0]} против ${choices[comp][0]} — `;
+      if(i===comp){draws++;msg+='ничья';}
+      else if((i-comp+3)%3===1){wins++;msg+='ты победил!';}
+      else{losses++;msg+='ты проиграл';}
+      result.textContent=msg;
+      update();
+    };
+    row.appendChild(b);
+  });
+  update();
+}
+
+/* ============ ИГРА 8: ВИСЕЛИЦА ============ */
+function startHangman(el){
+  const words=['КНИГА','МОРЕ','СОЛНЦЕ','КНОПКА','ПИРОГ','ЯБЛОКО','СТОЛ',
+    'РУЧКА','ОКНО','ДЕРЕВО','ГОРОД','ПТИЦА','ЗВЕЗДА','МАШИНА','ЦВЕТОК'];
+  const word=words[Math.floor(Math.random()*words.length)];
+  const guessed=new Set();
+  let wrong=0;
+  const maxWrong=6;
+  const info=document.createElement('div');info.className='game-result';
+  const wordEl=document.createElement('div');wordEl.className='hangman-word';
+  const kb=document.createElement('div');kb.className='hangman-kb';
+  el.append(info,wordEl,kb);
+  const rus='АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЫЬЭЮЯ'.split('');
+  const render=()=>{
+    wordEl.textContent=word.split('').map(ch=>guessed.has(ch)?ch:'_').join(' ');
+    info.textContent=`Ошибок: ${wrong}/${maxWrong}`;
+  };
+  const disableAll=()=>kb.querySelectorAll('button').forEach(b=>b.disabled=true);
+  rus.forEach(letter=>{
+    const b=document.createElement('button');
+    b.className='hangman-key';b.textContent=letter;
+    b.onclick=()=>{
+      b.disabled=true;
+      if(word.includes(letter))guessed.add(letter);
+      else wrong++;
+      render();
+      if(wrong>=maxWrong){info.textContent=`💀 Проигрыш. Слово: ${word}`;disableAll();}
+      else if(word.split('').every(ch=>guessed.has(ch))){
+        info.textContent=`🎉 Победа! Слово: ${word}`;disableAll();
+      }
+    };
+    kb.appendChild(b);
+  });
+  render();
+}
+
+/* ============ СПИСОК ИГР ============ */
+const games=[
+  {id:'reaction',title:'Реакция',category:'Аркады',emoji:'⚡',color:'#6c5ce7',start:startReaction},
+  {id:'clicker',title:'Кликер',category:'Аркады',emoji:'👆',color:'#e17055',start:startClicker},
+  {id:'memory',title:'Память',category:'Головоломки',emoji:'🧩',color:'#00b894',start:startMemory},
+  {id:'guess',title:'Угадай число',category:'Головоломки',emoji:'🔢',color:'#0984e3',start:startGuess},
+  {id:'simon',title:'Саймон',category:'Логика',emoji:'🎨',color:'#fdcb6e',start:startSimon},
+  {id:'tictactoe',title:'Крестики-нолики',category:'Логика',emoji:'❌',color:'#a29bfe',start:startTicTacToe},
+  {id:'rps',title:'Камень-ножницы-бумага',category:'Логика',emoji:'✊',color:'#00cec9',start:startRPS},
+  {id:'hangman',title:'Виселица',category:'Слова',emoji:'📖',color:'#55efc4',start:startHangman},
+];
+
+/* ============ UI ============ */
+const grid=document.getElementById('gamesGrid');
+const searchInput=document.getElementById('search');
+const catContainer=document.getElementById('categories');
+const modal=document.getElementById('modal');
+const modalTitle=document.getElementById('modalTitle');
+const modalCategory=document.getElementById('modalCategory');
+const modalClose=document.getElementById('modalClose');
+const gameContainer=document.getElementById('gameContainer');
+let currentCategory='Все';
+
+const categories=['Все',...new Set(games.map(g=>g.category))];
+catContainer.innerHTML=categories.map(c=>
+  `<button class="cat-btn ${c==='Все'?'active':''}" data-cat="${c}">${c}</button>`
+).join('');
+
+catContainer.addEventListener('click',e=>{
+  if(!e.target.classList.contains('cat-btn'))return;
+  document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+  e.target.classList.add('active');
+  currentCategory=e.target.dataset.cat;
+  renderGames();
+});
+
+function renderGames(){
+  const q=searchInput.value.toLowerCase().trim();
+  const filtered=games.filter(g=>{
+    const mc=currentCategory==='Все'||g.category===currentCategory;
+    const ms=g.title.toLowerCase().includes(q)||g.category.toLowerCase().includes(q);
+    return mc&&ms;
+  });
+  grid.innerHTML=filtered.map(g=>`
+    <div class="game-card" data-id="${g.id}">
+      <div class="game-thumb" style="background:linear-gradient(135deg,${g.color},#1a1d27)">${g.emoji}</div>
+      <div class="game-info">
+        <div class="game-title">${g.title}</div>
+        <div class="game-cat">${g.category}</div>
+      </div>
+    </div>
+  `).join('');
+  document.querySelectorAll('.game-card').forEach(card=>{
+    card.addEventListener('click',()=>{
+      const game=games.find(g=>g.id===card.dataset.id);
+      openModal(game);
+    });
+  });
+}
+
+function openModal(game){
+  modalTitle.textContent=game.title;
+  modalCategory.textContent=game.category;
+  gameContainer.innerHTML='';
+  modal.classList.add('open');
+  game.start(gameContainer);
+}
+
+function closeModal(){
+  modal.classList.remove('open');
+  gameContainer.innerHTML='';
+}
+
+modalClose.addEventListener('click',closeModal);
+modal.addEventListener('click',e=>{if(e.target===modal)closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+searchInput.addEventListener('input',renderGames);
+renderGames();
+</script>
+</body>
+</html>
